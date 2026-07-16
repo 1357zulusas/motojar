@@ -247,6 +247,16 @@
     border-radius:6px;color:var(--ink-dim);cursor:pointer;
   }
   .garage-close:hover{color:var(--ink);border-color:var(--ink-dim)}
+  .garage-filters{display:flex;gap:8px;padding:12px 12px 0}
+  .gf{
+    flex:1;min-width:0;font-family:"Segoe UI",sans-serif;font-size:12px;font-weight:600;
+    color:var(--ink-dim);background:var(--panel-2);
+    border:1px solid var(--line);border-bottom-width:1px;
+    border-radius:999px;padding:7px 8px;cursor:pointer;
+  }
+  .gf:hover{border-color:var(--gold-deep);color:var(--ink)}
+  .gf.active{border-color:var(--gold);color:var(--gold);background:rgba(245,181,63,.08)}
+  .bike-row .b-legal{color:#5fd97e;font-size:11px}
   .garage-list{overflow-y:auto;padding:10px 12px 24px;display:flex;flex-direction:column;gap:4px}
   .brand-title{
     font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);
@@ -495,6 +505,11 @@
     <h3>The Garage</h3>
     <button class="garage-close" id="garageClose" aria-label="Close">×</button>
   </div>
+  <div class="garage-filters" id="garageFilters">
+    <button class="gf active" data-f="all">All</button>
+    <button class="gf" data-f="legal">🛣️ Street legal</button>
+    <button class="gf" data-f="dirt">🏍️ Off-road</button>
+  </div>
   <div class="garage-list" id="garageList"></div>
 </aside>
 
@@ -689,10 +704,13 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
   }
 
   /* ---------- garage panel ---------- */
+  var garageFilter = "all";
   function buildGarage(){
     var groups = {};
     var order = [];
     BIKES.forEach(function(b){
+      if(garageFilter === "legal" && !b.legal) return;
+      if(garageFilter === "dirt" && b.legal) return;
       if(!groups[b.brand]){ groups[b.brand] = []; order.push(b.brand); }
       groups[b.brand].push(b);
     });
@@ -710,7 +728,7 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
         var status = s && s.unlocked ? "<small class='b-done'>✔ unlocked</small>"
                    : (pct > 0 ? "<small>" + pct + "% saved</small>" : "<small>&nbsp;</small>");
         row.innerHTML = "<span class='b-name'>" + b.name +
-          "<small>" + b.brand + "</small></span>" +
+          "<small>" + b.brand + (b.legal ? " · <span class='b-legal'>🛣️ street legal ✔</span>" : "") + "</small></span>" +
           "<span class='b-price'>" + fmtIn(b.goal, curFor(b)) + status + "</span>";
         row.addEventListener("click", function(){
           state.selected = b.id;
@@ -721,6 +739,15 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
       });
     });
   }
+
+  document.getElementById("garageFilters").addEventListener("click", function(ev){
+    var btn = ev.target.closest(".gf");
+    if(!btn) return;
+    garageFilter = btn.getAttribute("data-f");
+    this.querySelectorAll(".gf").forEach(function(x){ x.classList.remove("active"); });
+    btn.classList.add("active");
+    buildGarage();
+  });
 
   function openGarage(){ document.body.classList.add("garage-open"); }
   function closeGarage(){ document.body.classList.remove("garage-open"); }
