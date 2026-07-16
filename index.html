@@ -459,6 +459,29 @@
     color:#181000;border-color:var(--gold-deep);border-bottom-color:#7a5209}
   .custom-row button:hover{color:#000}
 
+  .flex-share{
+    align-self:center;flex:none;min-width:0;
+    font-family:"Segoe UI",sans-serif;font-size:13px;font-weight:700;
+    letter-spacing:.06em;color:var(--gold);
+    background:rgba(245,181,63,.08);border:1px solid var(--gold-deep);
+    border-bottom-width:1px;border-radius:999px;padding:9px 22px;cursor:pointer;
+  }
+  .flex-share:hover{color:#ffd97a;border-color:var(--gold)}
+  .flex-share-win{align-self:auto}
+
+  .flex-banner{
+    display:flex;align-items:center;gap:12px;
+    background:linear-gradient(180deg,rgba(63,216,245,.12),rgba(63,216,245,.03));
+    border:1px solid #1f6b7d;border-radius:10px;padding:14px 16px;
+    font-size:14px;line-height:1.5;
+  }
+  .flex-banner b{color:var(--glow)}
+  .flex-banner .fb-x{
+    margin-left:auto;flex:none;min-width:0;background:none;border:none;
+    color:var(--ink-dim);font-size:18px;cursor:pointer;padding:2px 8px;border-bottom:none;
+  }
+  .flex-banner .fb-x:hover{color:var(--ink)}
+
   .save-note{font-size:12px;color:var(--ink-dim);text-align:center}
   .save-note .reset{color:var(--ink-dim);text-decoration:underline;cursor:pointer;background:none;border:none;font:inherit;padding:0;min-width:0;flex:none}
   .save-note .reset:hover{color:#d5303e}
@@ -645,6 +668,7 @@
       <input id="customAmt" type="number" min="1" step="1" placeholder="Custom amount…" aria-label="Custom amount">
       <button id="customAdd">Deposit</button>
     </div>
+    <button class="flex-share" id="flexShare">📣 Show off my garage</button>
     <p class="save-note">Progress saves automatically per bike — refresh all you want. <button class="reset" id="resetLink">Reset this bike</button></p>
   </section>
 
@@ -653,6 +677,7 @@
     <p id="unlockP">You saved the full amount — it's yours. Take a victory lap, or reset and run it back.</p>
     <div class="cta-row">
       <a class="buy-btn" id="buyBtn" href="#" target="_blank" rel="noopener">🏁 Make it real</a>
+      <button class="flex-share flex-share-win" id="flexShareWin">📣 Brag about it</button>
       <button class="restart" id="restartBtn">Restart the run</button>
     </div>
     <p class="buy-note" id="buyNote"></p>
@@ -1247,6 +1272,59 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
     if(particles.length){ requestAnimationFrame(tick); }
     else{ confettiRunning = false; ctx.clearRect(0,0,canvas.width,canvas.height); }
   }
+
+  /* ---------- show off your garage ---------- */
+  function flexStats(){
+    var unlocked = BIKES.filter(function(b){ var s = state.bikes[b.id]; return s && s.unlocked; });
+    var cur = bikeById(state.selected), s = slot(cur.id);
+    var pct = Math.min(100, Math.floor(s.money / cur.goal * 100));
+    return {unlocked: unlocked, cur: cur, pct: pct};
+  }
+  function shareFlex(btn){
+    var f = flexStats();
+    var url = location.origin + location.pathname +
+      "?flex=" + (f.unlocked.map(function(b){ return b.id; }).join(".") || "none") +
+      "&now=" + f.cur.id + "." + f.pct;
+    var text = f.unlocked.length
+      ? "I unlocked " + f.unlocked.length + "/" + BIKES.length + " dream bikes on MotoJar 🏍️💰 Can you beat me?"
+      : "I'm " + f.pct + "% of the way to my " + f.cur.name + " on MotoJar 🏍️💰 Start your own garage!";
+    var old = btn.textContent;
+    function done(){ btn.textContent = "✔ Copied — go paste it!"; setTimeout(function(){ btn.textContent = old; }, 2200); }
+    if(navigator.share){
+      navigator.share({title:"MotoJar", text:text, url:url}).catch(function(){});
+    }else if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text + " " + url).then(done, function(){ prompt("Copy this:", text + " " + url); });
+    }else{
+      prompt("Copy this:", text + " " + url);
+    }
+  }
+  document.getElementById("flexShare").addEventListener("click", function(){ shareFlex(this); });
+  document.getElementById("flexShareWin").addEventListener("click", function(){ shareFlex(this); });
+
+  function showFlexBanner(){
+    var fm = location.search.match(/[?&]flex=([\w.-]+)/);
+    if(!fm) return;
+    var nm = location.search.match(/[?&]now=([\w-]+)\.(\d+)/);
+    var ids = fm[1].split(".");
+    var names = BIKES.filter(function(b){ return ids.indexOf(b.id) !== -1; }).map(function(b){ return b.name; });
+    var msg;
+    if(names.length){
+      msg = "🏆 Your friend unlocked <b>" + names.length + " of " + BIKES.length + "</b> dream bikes: <b>" +
+        names.join(", ") + "</b>. Think you can beat that? Pick a bike and start stacking.";
+    }else if(nm){
+      var nb = BIKES.filter(function(b){ return b.id === nm[1]; })[0];
+      if(!nb) return;
+      msg = "🏍️ Your friend is <b>" + nm[2] + "%</b> of the way to a <b>" + nb.name +
+        "</b>. Race them — pick your bike and start stacking.";
+    }else{ return; }
+    var banner = document.createElement("div");
+    banner.className = "flex-banner";
+    banner.innerHTML = msg + "<button class='fb-x' aria-label='Dismiss'>×</button>";
+    banner.querySelector(".fb-x").addEventListener("click", function(){ banner.remove(); });
+    var wrap = document.querySelector(".wrap");
+    wrap.insertBefore(banner, wrap.firstChild);
+  }
+  showFlexBanner();
 
   render();
 
