@@ -282,6 +282,8 @@
   }
   .rev-card .r-text{margin:0;font-size:13px;color:var(--ink-dim);line-height:1.5;flex:1}
   .rev-card .r-best{font-size:12px;color:var(--glow)}
+  .rev-card .r-full{color:var(--gold);text-decoration:none;font-weight:600}
+  .rev-card .r-full:hover{text-decoration:underline}
   .rev-card .r-acts{display:flex;gap:8px}
   .rev-card .r-acts button{font-size:12px;padding:8px 10px}
   .rev-card .r-acts a{
@@ -1011,7 +1013,7 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
           "<ul class='pros'>" + (b.pros || []).map(function(p){ return "<li>" + p + "</li>"; }).join("") + "</ul>" +
           "<ul class='cons'>" + (b.cons || []).map(function(c){ return "<li>" + c + "</li>"; }).join("") + "</ul>" +
         "</div>" +
-        "<div class='r-best'>Best for: " + b.best + "</div>";
+        "<div class='r-best'>Best for: " + b.best + " · <a class='r-full' href='/reviews/" + b.id + ".html'>📖 Full review →</a></div>";
       var acts = document.createElement("div");
       acts.className = "r-acts";
       var saveBtn = document.createElement("button");
@@ -1471,6 +1473,14 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
     track("/action/friend-garage-view");
   }
   showFriendGarage();
+
+  // ?save=bike-id — arriving from a review page's "Save up for it" button
+  var saveMatch = location.search.match(/[?&]save=([\w-]+)/);
+  if(saveMatch && BIKES.some(function(b){ return b.id === saveMatch[1]; })){
+    state.selected = saveMatch[1];
+    track("/action/select", "Selected " + bikeById(saveMatch[1]).name + " (from review page)");
+    save();
+  }
 
   render();
 
