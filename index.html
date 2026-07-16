@@ -543,6 +543,21 @@
 
   #confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
 
+  @media (max-width:640px){
+    body{padding:100px 12px 48px}
+    .compare-btn{top:8px;left:8px;font-size:11px;padding:8px 12px}
+    .copy-all-btn{top:50px;left:8px}
+    .garage-btn{top:8px;right:8px;font-size:11px;padding:8px 12px}
+    .cur-sel{top:50px;right:8px;font-size:12px;padding:8px 10px;border-bottom-width:2px}
+    .h2h-selects{flex-direction:column;align-items:stretch;gap:8px}
+    .h2h-vs{text-align:center}
+    .pick{flex-wrap:wrap}
+    .pick .p-act{flex-direction:row;width:100%;justify-content:space-between;align-items:center}
+    .unlock .cta-row{flex-direction:column;align-items:stretch;width:100%}
+    .h2h-acts{grid-template-columns:1fr;gap:8px}
+    table.h2h img{height:80px}
+  }
+
   @media (prefers-reduced-motion:reduce){
     .bar-fill,.bike-real,.pro-badge,.garage-panel,.garage-backdrop{transition:none}
     .float-cash{animation:none;opacity:0}
@@ -767,6 +782,19 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
 
   if(!CURRENCIES[state.currency]) state.currency = "USD";
 
+  // Clicky custom action tracking — safe no-op if the tracker hasn't loaded
+  function track(path, title){
+    try{ if(window.clicky) window.clicky.log(path, title || path, "click"); }catch(e){}
+  }
+  // every affiliate/store link click, wherever it lives on the page
+  document.addEventListener("click", function(ev){
+    var a = ev.target.closest("a");
+    if(a && a.href && a.href.indexOf("ref=") !== -1){
+      track("/action/buy-click", "Buy click: " + a.href.replace(/^https?:\/\//, "").split("?")[0]);
+      try{ if(window.clicky) window.clicky.goal("affiliate-click"); }catch(e){}
+    }
+  });
+
   function save(){
     try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
   }
@@ -884,6 +912,7 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
           "<span class='b-price'>" + fmtIn(b.goal, curFor(b)) + status + "</span>";
         row.addEventListener("click", function(){
           state.selected = b.id;
+          track("/action/select", "Selected " + b.brand + " " + b.name);
           save(); render();
           closeGarage();
         });
@@ -901,7 +930,7 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
     buildGarage();
   });
 
-  function openGarage(){ document.body.classList.add("garage-open"); }
+  function openGarage(){ document.body.classList.add("garage-open"); track("/action/garage-open"); }
   function closeGarage(){ document.body.classList.remove("garage-open"); }
   /* ---------- compare ---------- */
   function stars(n){
@@ -910,6 +939,7 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
   }
   function pickBike(id){
     state.selected = id;
+    track("/action/select", "Selected " + bikeById(id).name + " (from compare)");
     save(); render();
     document.body.classList.remove("compare-open");
     window.scrollTo({top:0, behavior:"smooth"});
@@ -1165,6 +1195,7 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
     share.className = "share-btn";
     share.textContent = "🔗 Share this matchup";
     share.addEventListener("click", function(){
+      track("/action/share-matchup", a.name + " vs " + b.name);
       var url = location.origin + location.pathname + "?vs=" + a.id + "," + b.id;
       function done(){ share.textContent = "✔ Link copied!"; setTimeout(function(){ share.textContent = "🔗 Share this matchup"; }, 2000); }
       if(navigator.clipboard && navigator.clipboard.writeText){
@@ -1191,12 +1222,14 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
     buildSpecTable(); buildReviews(); buildBudget();
     fillVsSelects(); renderVs();
     document.body.classList.add("compare-open");
+    track("/action/compare-open");
   });
   el.compareClose.addEventListener("click", function(){ document.body.classList.remove("compare-open"); });
   el.budgetIn.addEventListener("input", buildBudget);
 
   el.curSel.addEventListener("change", function(){
     state.currency = this.value;
+    track("/action/currency", "Currency: " + this.value);
     save(); render();
   });
 
@@ -1227,8 +1260,10 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
     var cur = CURRENCIES[curFor(b)];
     s.money += n / cur.rate; // deposits are in the shown currency, stored as USD
     floatCash(n, cur.sym);
+    track("/action/deposit", "Deposit +" + cur.sym + n + " toward " + b.name);
     if(!s.unlocked && s.money >= b.goal - 0.001){
       s.unlocked = true;
+      track("/action/unlock", "UNLOCKED " + b.brand + " " + b.name);
       render(); save();
       fireConfetti();
       document.querySelector(".unlock").scrollIntoView({behavior:"smooth", block:"center"});
@@ -1252,6 +1287,7 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
 
   function restart(){
     var s = slot(state.selected);
+    track("/action/restart", "Restart " + bikeById(state.selected).name);
     s.money = 0; s.unlocked = false;
     save(); render();
     window.scrollTo({top:0, behavior:"smooth"});
@@ -1318,6 +1354,7 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
     return {unlocked: unlocked, cur: cur, pct: pct};
   }
   function shareFlex(btn){
+    track("/action/share-flex");
     var f = flexStats();
     var url = location.origin + location.pathname +
       "?flex=" + (f.unlocked.map(function(b){ return b.id; }).join(".") || "none") +
@@ -1366,6 +1403,7 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
   /* ---------- copy-my-link: full garage share ---------- */
   document.getElementById("copyAllBtn").addEventListener("click", function(){
     var btn = this;
+    track("/action/share-garage");
     var parts = [];
     BIKES.forEach(function(b){
       var s = state.bikes[b.id];
@@ -1420,6 +1458,7 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
     document.getElementById("friendClose").addEventListener("click", closeFriend);
     document.getElementById("friendCta").addEventListener("click", closeFriend);
     document.body.classList.add("friend-open");
+    track("/action/friend-garage-view");
   }
   showFriendGarage();
 
