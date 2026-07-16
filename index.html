@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Save 2 Ride</title>
+<title>MotoJar</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   :root{
@@ -732,13 +732,13 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
     var s = slot(b.id);
     var goal = b.goal;
 
-    el.eyebrow.textContent = "Save 2 Ride · " + b.brand;
+    el.eyebrow.textContent = "MotoJar · " + b.brand;
     el.bikeTitle.textContent = b.name;
     el.goalSub.textContent = fmt(goal);
     el.unlockSub.textContent = unlockName(b);
     el.prizeTag.textContent = b.name;
     el.proBadge.textContent = badgeText(b);
-    document.title = "Save 2 Ride · " + b.name;
+    document.title = "MotoJar · " + b.name;
 
     if(el.bikeReal.getAttribute("src") !== b.img){
       el.bikeGhost.src = b.img;
