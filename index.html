@@ -128,6 +128,20 @@
     background:var(--panel);border:1px solid var(--line);border-radius:10px;
     padding:18px;display:flex;flex-direction:column;gap:16px;
   }
+  .vs-search{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:8px;color:var(--ink);padding:10px 14px;font-size:14px;
+    font-family:"Segoe UI",sans-serif;
+  }
+  .vs-search:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+  .share-btn{
+    align-self:center;flex:none;min-width:0;font-family:"Segoe UI",sans-serif;
+    font-size:12px;font-weight:600;letter-spacing:.08em;
+    padding:8px 18px;color:var(--glow);
+    background:var(--panel-2);border:1px solid #1f6b7d;border-bottom-width:1px;
+    border-radius:999px;cursor:pointer;
+  }
+  .share-btn:hover{color:#8fe8fa;border-color:var(--glow)}
   .h2h-selects{display:flex;gap:12px;align-items:center}
   .h2h-selects select{
     flex:1;min-width:0;background:var(--panel-2);border:1px solid var(--line);
@@ -470,6 +484,7 @@
 
     <h3 class="compare-sec-title">⚔️ Head-to-head — pick two bikes</h3>
     <div class="h2h-box">
+      <input id="vsSearch" class="vs-search" type="search" placeholder="🔍 Search a bike to compare…" aria-label="Search bikes">
       <div class="h2h-selects">
         <select id="vsA" aria-label="First bike"></select>
         <span class="h2h-vs">VS</span>
@@ -632,7 +647,7 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
    "bikeGhost","bikeReal","proBadge","prizeTag","eyebrow","bikeTitle","goalSub","unlockSub",
    "unlockH2","unlockP","garageBtn","garagePanel","garageBackdrop","garageClose","garageList",
    "customAmt","curSel","buyBtn","buyNote","compareBtn","compareOverlay","compareClose",
-   "budgetIn","budgetPicks","specTable","reviewGrid","vsA","vsB","vsOut"].forEach(function(id){ el[id] = document.getElementById(id); });
+   "budgetIn","budgetPicks","specTable","reviewGrid","vsA","vsB","vsOut","vsSearch"].forEach(function(id){ el[id] = document.getElementById(id); });
 
   /* ---------- render ---------- */
   function threshold(goal, i){ return Math.ceil(goal * (i+1) / LAYERS); }
@@ -944,9 +959,38 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
       acts.appendChild(col);
     });
     el.vsOut.appendChild(acts);
+
+    var share = document.createElement("button");
+    share.className = "share-btn";
+    share.textContent = "🔗 Share this matchup";
+    share.addEventListener("click", function(){
+      var url = location.origin + location.pathname + "?vs=" + a.id + "," + b.id;
+      function done(){ share.textContent = "✔ Link copied!"; setTimeout(function(){ share.textContent = "🔗 Share this matchup"; }, 2000); }
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(url).then(done, function(){ prompt("Copy this link:", url); });
+      }else{
+        prompt("Copy this link:", url);
+      }
+    });
+    el.vsOut.appendChild(share);
   }
   el.vsA.addEventListener("change", renderVs);
   el.vsB.addEventListener("change", renderVs);
+
+  el.vsSearch.addEventListener("input", function(){
+    var q = this.value.toLowerCase();
+    [el.vsA, el.vsB].forEach(function(sel){
+      var firstVisible = null, curVisible = false;
+      Array.prototype.forEach.call(sel.options, function(o){
+        var show = !q || o.textContent.toLowerCase().indexOf(q) !== -1;
+        o.hidden = !show;
+        if(show && firstVisible === null) firstVisible = o.value;
+        if(show && o.value === sel.value) curVisible = true;
+      });
+      if(!curVisible && firstVisible !== null) sel.value = firstVisible;
+    });
+    renderVs();
+  });
 
   el.compareBtn.addEventListener("click", function(){
     buildSpecTable(); buildReviews(); buildBudget();
@@ -1072,6 +1116,16 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
   }
 
   render();
+
+  // shared matchup links: ?vs=bike-a,bike-b opens the comparison directly
+  var vsMatch = location.search.match(/[?&]vs=([\w-]+),([\w-]+)/);
+  if(vsMatch){
+    buildSpecTable(); buildReviews(); buildBudget(); fillVsSelects();
+    if(BIKES.some(function(b){ return b.id === vsMatch[1]; })) el.vsA.value = vsMatch[1];
+    if(BIKES.some(function(b){ return b.id === vsMatch[2]; })) el.vsB.value = vsMatch[2];
+    renderVs();
+    document.body.classList.add("compare-open");
+  }
 })();
 </script>
 </body>
