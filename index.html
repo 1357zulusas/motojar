@@ -543,6 +543,24 @@
   }
   .unlock .restart:hover{color:#fff;border-color:#d5303e}
 
+  .site-footer{
+    border-top:1px solid var(--line);margin-top:16px;padding-top:24px;
+    text-align:center;color:var(--ink-dim);font-size:12px;
+    display:flex;flex-direction:column;gap:8px;line-height:1.6;
+  }
+  .site-footer .f-brand{
+    font-family:"Segoe UI Black","Segoe UI",sans-serif;font-weight:900;
+    letter-spacing:.24em;color:var(--ink);font-size:14px;
+  }
+  .site-footer .f-links{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+  .site-footer .f-links a,.site-footer .f-links button{
+    color:var(--gold);text-decoration:none;font-size:12px;font-weight:600;
+    background:none;border:none;padding:0;cursor:pointer;flex:none;min-width:0;
+    font-family:"Segoe UI",sans-serif;letter-spacing:.04em;
+  }
+  .site-footer .f-links a:hover,.site-footer .f-links button:hover{text-decoration:underline;color:#ffd97a}
+  .site-footer p{margin:0;max-width:58ch;align-self:center}
+
   #confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
 
   @media (max-width:640px){
@@ -741,11 +759,22 @@
     <p id="unlockP">You saved the full amount — it's yours. Take a victory lap, or reset and run it back.</p>
     <div class="cta-row">
       <a class="buy-btn" id="buyBtn" href="#" target="_blank" rel="noopener">🏁 Make it real</a>
-      <button class="flex-share flex-share-win" id="flexShareWin">📣 Brag about it</button>
       <button class="restart" id="restartBtn">Restart the run</button>
     </div>
     <p class="buy-note" id="buyNote"></p>
   </section>
+
+  <footer class="site-footer">
+    <div class="f-brand">🏍️ MOTOJAR</div>
+    <nav class="f-links">
+      <a href="/reviews/">Bike reviews</a>
+      <button id="footCompare">Compare bikes</button>
+      <button id="footGarage">The garage</button>
+    </nav>
+    <p>MotoJar helps you save up for your dream electric bike — pick it, stack money, unlock it.</p>
+    <p>MotoJar may earn a commission when you buy through links on this site. Prices from official brand stores; specs from manufacturer data.</p>
+    <p>© 2026 MotoJar · motojar.com</p>
+  </footer>
 </div>
 
 <canvas id="confetti"></canvas>
@@ -1013,7 +1042,7 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
           "<ul class='pros'>" + (b.pros || []).map(function(p){ return "<li>" + p + "</li>"; }).join("") + "</ul>" +
           "<ul class='cons'>" + (b.cons || []).map(function(c){ return "<li>" + c + "</li>"; }).join("") + "</ul>" +
         "</div>" +
-        "<div class='r-best'>Best for: " + b.best + " · <a class='r-full' href='/reviews/" + b.id + ".html'>📖 Full review →</a></div>";
+        "<div class='r-best'>Best for: " + b.best + " · <a class='r-full' href='/reviews/" + b.id + "'>📖 Full review →</a></div>";
       var acts = document.createElement("div");
       acts.className = "r-acts";
       var saveBtn = document.createElement("button");
@@ -1230,11 +1259,20 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
   });
   document.getElementById("revSort").addEventListener("change", buildReviews);
 
-  el.compareBtn.addEventListener("click", function(){
+  function openCompare(){
     buildSpecTable(); buildReviews(); buildBudget();
     fillVsSelects(); renderVs();
     document.body.classList.add("compare-open");
     track("/action/compare-open");
+  }
+  el.compareBtn.addEventListener("click", openCompare);
+  document.getElementById("footCompare").addEventListener("click", function(){
+    openCompare();
+    document.getElementById("compareOverlay").scrollTop = 0;
+  });
+  document.getElementById("footGarage").addEventListener("click", function(){
+    openGarage();
+    window.scrollTo({top:0, behavior:"smooth"});
   });
   el.compareClose.addEventListener("click", function(){ document.body.classList.remove("compare-open"); });
   el.budgetIn.addEventListener("input", buildBudget);
@@ -1385,7 +1423,6 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
     }
   }
   document.getElementById("flexShare").addEventListener("click", function(){ shareFlex(this); });
-  document.getElementById("flexShareWin").addEventListener("click", function(){ shareFlex(this); });
 
   function showFlexBanner(){
     var fm = location.search.match(/[?&]flex=([\w.-]+)/);
