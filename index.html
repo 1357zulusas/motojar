@@ -66,6 +66,29 @@
     border-radius:999px;padding:9px 16px;cursor:pointer;
   }
   .compare-btn:hover{color:#8fe8fa;border-color:var(--glow)}
+  .copy-all-btn{left:142px;color:var(--gold);border-color:var(--gold-deep)}
+  .copy-all-btn:hover{color:#ffd97a;border-color:var(--gold)}
+
+  .friend-overlay{
+    position:fixed;inset:0;z-index:46;background:rgba(6,10,17,.97);
+    overflow-y:auto;display:none;
+  }
+  body.friend-open .friend-overlay{display:block}
+  .friend-sub{margin:0;color:var(--ink-dim);font-size:14px}
+  .friend-sub b{color:var(--gold)}
+  .friend-cta{
+    align-self:center;flex:none;min-width:0;
+    font-family:"Segoe UI",sans-serif;font-size:15px;font-weight:700;
+    color:#181000;background:linear-gradient(180deg,var(--gold),var(--gold-deep));
+    border:1px solid var(--gold-deep);border-bottom:3px solid #7a5209;
+    border-radius:10px;padding:14px 30px;cursor:pointer;
+  }
+  .friend-cta:hover{filter:brightness(1.08);color:#000}
+  .pick .p-bar{
+    height:8px;border-radius:4px;background:var(--panel);
+    border:1px solid var(--line);overflow:hidden;margin-top:6px;
+  }
+  .pick .p-bar div{height:100%;background:linear-gradient(90deg,var(--gold-deep),var(--gold))}
   .compare-overlay{
     position:fixed;inset:0;z-index:45;background:rgba(6,10,17,.97);
     overflow-y:auto;display:none;
@@ -529,6 +552,19 @@
 <body>
 
 <button class="compare-btn" id="compareBtn">⚖ Compare</button>
+<button class="compare-btn copy-all-btn" id="copyAllBtn">🔗 Copy my link</button>
+
+<div class="friend-overlay" id="friendOverlay">
+  <div class="compare-inner">
+    <div class="compare-head">
+      <h2>🏆 Your friend's garage</h2>
+      <button class="compare-close" id="friendClose">✕ Close</button>
+    </div>
+    <p class="friend-sub" id="friendSub"></p>
+    <div class="picks" id="friendList"></div>
+    <button class="friend-cta" id="friendCta">🏍️ Build my own garage — beat them!</button>
+  </div>
+</div>
 
 <div class="compare-overlay" id="compareOverlay">
   <div class="compare-inner">
@@ -1326,6 +1362,66 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
     wrap.insertBefore(banner, wrap.firstChild);
   }
   showFlexBanner();
+
+  /* ---------- copy-my-link: full garage share ---------- */
+  document.getElementById("copyAllBtn").addEventListener("click", function(){
+    var btn = this;
+    var parts = [];
+    BIKES.forEach(function(b){
+      var s = state.bikes[b.id];
+      if(s && (s.money > 0 || s.unlocked)){
+        parts.push(b.id + "." + Math.round(s.money) + "." + (s.unlocked ? 1 : 0));
+      }
+    });
+    var url = location.origin + location.pathname + "?g=" + (parts.join("_") || "empty");
+    function done(){ btn.textContent = "✔ Copied!"; setTimeout(function(){ btn.textContent = "🔗 Copy my link"; }, 2200); }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(done, function(){ prompt("Copy this link:", url); });
+    }else{
+      prompt("Copy this link:", url);
+    }
+  });
+
+  function showFriendGarage(){
+    var gm = location.search.match(/[?&]g=([\w.\-_]+)/);
+    if(!gm) return;
+    var list = document.getElementById("friendList");
+    var totalSaved = 0, unlockedCount = 0, rows = 0;
+    list.innerHTML = "";
+    gm[1].split("_").forEach(function(part){
+      var bits = part.split(".");
+      var b = BIKES.filter(function(x){ return x.id === bits[0]; })[0];
+      if(!b) return;
+      var money = Math.max(0, parseInt(bits[1], 10) || 0);
+      var unlocked = bits[2] === "1";
+      var pct = unlocked ? 100 : Math.min(100, Math.floor(money / b.goal * 100));
+      totalSaved += money;
+      if(unlocked) unlockedCount++;
+      rows++;
+      var row = document.createElement("div");
+      row.className = "pick" + (unlocked ? " winner" : "");
+      row.innerHTML = "<img src='" + b.img + "' alt=''>" +
+        "<div class='p-info'>" +
+        "<div class='p-name'>" + b.name + "<small>" + b.brand + "</small></div>" +
+        "<div class='p-bar'><div style='width:" + pct + "%'></div></div>" +
+        "<div class='p-why'>" + (unlocked ? "🏆 UNLOCKED!" : pct + "% saved — " + fmtIn(money, state.currency) + " of " + fmtIn(b.goal, state.currency)) + "</div>" +
+        "</div>";
+      list.appendChild(row);
+    });
+    var sub = document.getElementById("friendSub");
+    if(!rows){
+      sub.innerHTML = "They just started — their jar is still empty. Perfect time to get ahead of them.";
+    }else{
+      sub.innerHTML = "They've stacked <b>" + fmtIn(totalSaved, state.currency) + "</b> total" +
+        (unlockedCount ? " and unlocked <b>" + unlockedCount + " bike" + (unlockedCount > 1 ? "s" : "") + "</b>" : "") +
+        " out of " + BIKES.length + " in the garage. Can you beat that?";
+    }
+    function closeFriend(){ document.body.classList.remove("friend-open"); }
+    document.getElementById("friendClose").addEventListener("click", closeFriend);
+    document.getElementById("friendCta").addEventListener("click", closeFriend);
+    document.body.classList.add("friend-open");
+  }
+  showFriendGarage();
 
   render();
 
