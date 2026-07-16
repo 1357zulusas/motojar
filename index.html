@@ -114,6 +114,14 @@
   .pick .p-act{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
   .pick .p-price{font-family:Consolas,monospace;color:var(--gold);font-weight:700}
   .pick button{flex:none;min-width:0;font-size:12px;padding:6px 12px}
+  .pick .p-act a{
+    display:flex;align-items:center;justify-content:center;text-decoration:none;
+    font-family:Consolas,monospace;font-size:12px;font-weight:700;color:#181000;
+    background:linear-gradient(180deg,var(--gold),var(--gold-deep));
+    border:1px solid var(--gold-deep);border-bottom:3px solid #7a5209;
+    border-radius:8px;padding:6px 12px;white-space:nowrap;
+  }
+  .pick .p-act a:hover{filter:brightness(1.08)}
   .picks-empty{color:var(--ink-dim);font-size:14px}
 
   .spec-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
@@ -750,6 +758,12 @@ var BIKES = [{"id": "soleil01", "brand": "TUTTIO", "name": "Soleil01", "goal": 1
       btn.textContent = "🎯 Save for it";
       btn.addEventListener("click", function(){ pickBike(b.id); });
       act.appendChild(btn);
+      if(b.link){
+        var buy = document.createElement("a");
+        buy.href = b.link; buy.target = "_blank"; buy.rel = "noopener";
+        buy.textContent = "🛒 Buy it now";
+        act.appendChild(buy);
+      }
       row.appendChild(act);
       el.budgetPicks.appendChild(row);
     });
